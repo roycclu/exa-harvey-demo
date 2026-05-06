@@ -9,9 +9,14 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { query?: string; numResults?: number };
+    const body = (await request.json()) as {
+      query?: string;
+      numResults?: number;
+      includeDomains?: string[];
+    };
     const query = body.query?.trim();
     const numResults = Math.max(5, Math.min(body.numResults ?? 6, 8));
+    const includeDomains = (body.includeDomains ?? []).filter(Boolean);
 
     if (!query) {
       throw new ApiError("Enter a search query before running manual search.", 400);
@@ -20,7 +25,8 @@ export async function POST(request: Request) {
     const results = await searchExa({
       query,
       numResults,
-      category: "precedent"
+      category: "precedent",
+      includeDomains
     });
 
     const payload: ManualSearchResponse = {

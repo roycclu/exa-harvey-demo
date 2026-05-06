@@ -12,6 +12,10 @@ export type SearchResult = {
   searchQuery: string;
 };
 
+export type SearchConfig = {
+  includeDomains: string[];
+};
+
 export type ManualSearchResponse = {
   mode: "manual";
   query: string;

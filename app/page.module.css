@@ -1,50 +1,58 @@
 .page {
   min-height: 100vh;
-  padding: 48px 20px 64px;
+  padding: 28px 20px 56px;
 }
 
 .shell {
-  max-width: 1240px;
+  max-width: 1480px;
   margin: 0 auto;
 }
 
 .hero {
   display: grid;
-  gap: 18px;
-  margin-bottom: 28px;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 0 8px;
 }
 
-.eyebrow {
-  width: fit-content;
-  padding: 7px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.55);
+.heroTopline {
   color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .hero h1 {
   margin: 0;
-  max-width: 10ch;
-  font-size: clamp(3rem, 8vw, 6rem);
-  line-height: 0.92;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  line-height: 0.96;
   letter-spacing: -0.04em;
+}
+
+.hero h1 span {
+  color: var(--muted);
+  font-size: 0.42em;
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .hero p {
   margin: 0;
-  max-width: 760px;
+  max-width: 840px;
   color: var(--muted);
-  font-size: 1.08rem;
-  line-height: 1.6;
+  font-size: 0.98rem;
+  line-height: 1.55;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr) minmax(86px, 320px);
   gap: 24px;
   align-items: start;
 }
@@ -59,7 +67,7 @@
 
 .controls {
   position: sticky;
-  top: 20px;
+  top: 16px;
   display: grid;
   gap: 18px;
   padding: 20px;
@@ -96,16 +104,18 @@
 
 .textarea,
 .input,
-.fileInput {
+.fileInput,
+.configTextarea {
   width: 100%;
   border: 1px solid rgba(60, 49, 38, 0.14);
   border-radius: 16px;
-  background: #fffdfa;
+  background: #fdfaf4;
   color: var(--text);
 }
 
 .textarea,
-.input {
+.input,
+.configTextarea {
   padding: 14px 16px;
 }
 
@@ -120,7 +130,7 @@
 }
 
 .fileInput {
-  padding: 12px;
+  display: none;
 }
 
 .actions {
@@ -147,14 +157,14 @@
 
 .button {
   background: var(--accent);
-  color: #fff7f2;
+  color: #f7f2e8;
 }
 
 .button:hover,
 .toggleActive,
 .filterActive {
   background: var(--accent-strong);
-  color: #fff7f2;
+  color: #f7f2e8;
 }
 
 .buttonGhost {
@@ -173,7 +183,7 @@
 .filter {
   min-height: 38px;
   padding: 0 14px;
-  background: rgba(84, 66, 49, 0.08);
+  background: rgba(62, 53, 42, 0.08);
   color: var(--muted);
 }
 
@@ -196,6 +206,20 @@
   padding: 20px;
 }
 
+.resultsToolbar {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(60, 49, 38, 0.08);
+  background: rgba(252, 248, 241, 0.72);
+}
+
+.toolbarBlock {
+  display: grid;
+  gap: 8px;
+}
+
 .resultsHeader {
   display: flex;
   justify-content: space-between;
@@ -212,7 +236,7 @@
   padding: 18px;
   border-radius: 22px;
   border: 1px solid rgba(60, 49, 38, 0.08);
-  background: var(--panel-strong);
+  background: #fcf9f2;
 }
 
 .groupHeader {
@@ -245,7 +269,7 @@
   padding: 16px;
   border-radius: 18px;
   border: 1px solid rgba(60, 49, 38, 0.08);
-  background: #fffcf7;
+  background: #fffdf8;
 }
 
 .cardTop {
@@ -266,14 +290,14 @@
   min-width: 68px;
   padding: 7px 10px;
   border-radius: 999px;
-  background: rgba(159, 61, 36, 0.08);
+  background: rgba(45, 39, 30, 0.08);
   color: var(--accent-strong);
   font-size: 0.85rem;
   text-align: center;
 }
 
 .url {
-  color: var(--accent-strong);
+  color: #504536;
   font-size: 0.9rem;
   word-break: break-word;
 }
@@ -305,6 +329,129 @@
   line-height: 1.5;
 }
 
+.dropzone {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 18px;
+  border: 1px dashed rgba(50, 43, 33, 0.2);
+  border-radius: 18px;
+  background: #fdfaf4;
+  text-align: left;
+}
+
+.dropzoneActive {
+  background: rgba(45, 39, 30, 0.05);
+  border-color: rgba(45, 39, 30, 0.35);
+}
+
+.dropzoneTitle {
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.dropzoneMeta {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.configPanel {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  transition: width 180ms ease, padding 180ms ease;
+}
+
+.configPanelCollapsed {
+  width: 86px;
+  padding: 14px 10px;
+}
+
+.configHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.configHeader h2 {
+  margin: 4px 0 0;
+  font-size: 1.08rem;
+}
+
+.iconButton {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(45, 39, 30, 0.08);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.configBody,
+.configSection,
+.optionList,
+.queryList {
+  display: grid;
+  gap: 12px;
+}
+
+.configSection {
+  padding-top: 14px;
+  border-top: 1px solid rgba(60, 49, 38, 0.08);
+}
+
+.option {
+  display: flex;
+  gap: 12px;
+  align-items: start;
+  color: var(--muted);
+}
+
+.option input {
+  margin-top: 2px;
+}
+
+.option span {
+  display: grid;
+  gap: 4px;
+}
+
+.option strong {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.option em {
+  font-style: normal;
+  font-size: 0.86rem;
+}
+
+.configTextarea {
+  min-height: 92px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.switchRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  color: var(--text);
+}
+
+.queryCard {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(45, 39, 30, 0.06);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 @media (max-width: 980px) {
   .grid {
     grid-template-columns: 1fr;
@@ -318,7 +465,13 @@
   .groupHeader,
   .cardTop,
   .cardMeta,
-  .sectionHeader {
+  .sectionHeader,
+  .configHeader,
+  .switchRow {
     display: grid;
+  }
+
+  .hero h1 {
+    gap: 8px;
   }
 }

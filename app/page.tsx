@@ -1,17 +1,33 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, useMemo, useRef, useState } from "react";
 
 import styles from "@/app/page.module.css";
 import type {
   DocumentSearchResponse,
   ManualSearchResponse,
   ResearchCategory,
+  SearchConfig,
   SearchResult,
   SortMode
 } from "@/lib/types";
 
 type ResultState = ManualSearchResponse | DocumentSearchResponse | null;
+
+type DomainPreset = {
+  id: string;
+  label: string;
+  domain: string;
+};
+
+const DOMAIN_PRESETS: DomainPreset[] = [
+  { id: "cornell", label: "Cornell LII", domain: "law.cornell.edu" },
+  { id: "justice", label: "U.S. DOJ", domain: "justice.gov" },
+  { id: "supreme", label: "Supreme Court", domain: "supremecourt.gov" },
+  { id: "sec", label: "SEC", domain: "sec.gov" },
+  { id: "reuters", label: "Reuters Legal", domain: "reuters.com" },
+  { id: "lexology", label: "Lexology", domain: "lexology.com" }
+];
 
 const CATEGORY_META: Record<ResearchCategory, { label: string; description: string }> = {
   precedent: {
@@ -58,17 +74,49 @@ function sortResults(results: SearchResult[], sortMode: SortMode) {
   });
 }
 
+function parseCustomDomains(value: string) {
+  return value
+    .split(/[\n,]/)
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean)
+    .map((domain) => domain.replace(/^https?:\/\//, "").replace(/\/.*$/, ""));
+}
+
+function buildSearchConfig(selectedPresetIds: string[], customDomains: string): SearchConfig {
+  const presetDomains = DOMAIN_PRESETS.filter((preset) => selectedPresetIds.includes(preset.id)).map(
+    (preset) => preset.domain
+  );
+
+  return {
+    includeDomains: [...new Set([...presetDomains, ...parseCustomDomains(customDomains)])]
+  };
+}
+
 export default function HomePage() {
   const [manualQuery, setManualQuery] = useState(
     "Delaware corporate veil piercing precedent in SaaS acquisition disputes"
   );
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [selectedPresetIds, setSelectedPresetIds] = useState<string[]>([
+    "cornell",
+    "justice",
+    "supreme"
+  ]);
+  const [customDomains, setCustomDomains] = useState("");
+  const [showSearchQueries, setShowSearchQueries] = useState(false);
+  const [configExpanded, setConfigExpanded] = useState(true);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [resultState, setResultState] = useState<ResultState>(null);
   const [sortMode, setSortMode] = useState<SortMode>("relevance");
   const [activeFilter, setActiveFilter] = useState<ResearchCategory | "all">("all");
   const [manualPending, setManualPending] = useState(false);
   const [uploadPending, setUploadPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const searchConfig = useMemo(
+    () => buildSearchConfig(selectedPresetIds, customDomains),
+    [customDomains, selectedPresetIds]
+  );
 
   const groupedResults = useMemo(() => {
     if (!resultState) {
@@ -109,7 +157,8 @@ export default function HomePage() {
         },
         body: JSON.stringify({
           query: manualQuery,
-          numResults: 6
+          numResults: 6,
+          includeDomains: searchConfig.includeDomains
         })
       });
 
@@ -142,6 +191,7 @@ export default function HomePage() {
     try {
       const formData = new FormData();
       formData.append("file", uploadFile);
+      formData.append("includeDomains", JSON.stringify(searchConfig.includeDomains));
 
       const response = await fetch("/api/document-research", {
         method: "POST",
@@ -169,15 +219,45 @@ export default function HomePage() {
     setUploadFile(event.target.files?.[0] ?? null);
   }
 
+  function togglePreset(id: string) {
+    setSelectedPresetIds((current) =>
+      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]
+    );
+  }
+
+  function onDragOver(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setIsDraggingFile(true);
+  }
+
+  function onDragLeave(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setIsDraggingFile(false);
+  }
+
+  function onDrop(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setIsDraggingFile(false);
+
+    const file = event.dataTransfer.files?.[0];
+
+    if (file) {
+      setUploadFile(file);
+    }
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
         <section className={styles.hero}>
-          <div className={styles.eyebrow}>Exa x OpenAI legal research</div>
-          <h1>Neural search for live legal workflows.</h1>
+          <div className={styles.heroTopline}>Legal research demo</div>
+          <h1>
+            Harvey Neural Search
+            <span>powered by Exa</span>
+          </h1>
           <p>
-            Run direct Exa neural search for focused legal questions, or upload a contract or case
-            summary and let OpenAI generate three research angles before parallel Exa retrieval.
+            Direct neural search for focused legal questions, plus document-led parallel research
+            across precedents, opposing counsel history, and industry developments.
           </p>
         </section>
 
@@ -209,20 +289,29 @@ export default function HomePage() {
                 <h2>Mode 2</h2>
                 <span className={styles.kicker}>Document upload</span>
               </div>
-              <textarea
-                className={styles.textarea}
-                readOnly
-                value={
-                  uploadFile
-                    ? `${uploadFile.name}\n${Math.max(1, Math.round(uploadFile.size / 1024))} KB`
-                    : "Upload a contract, memo, case summary, or dispute brief in text or PDF form."
-                }
-              />
+              <button
+                className={`${styles.dropzone} ${isDraggingFile ? styles.dropzoneActive : ""}`}
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={onDragOver}
+                onDragLeave={onDragLeave}
+                onDrop={onDrop}
+              >
+                <span className={styles.dropzoneTitle}>
+                  {uploadFile ? uploadFile.name : "Drag and drop a contract or case summary"}
+                </span>
+                <span className={styles.dropzoneMeta}>
+                  {uploadFile
+                    ? `${Math.max(1, Math.round(uploadFile.size / 1024))} KB selected`
+                    : "or click to upload a text file or PDF"}
+                </span>
+              </button>
               <input
                 className={styles.fileInput}
                 type="file"
                 accept=".pdf,.txt,.md,.rtf,text/plain,application/pdf"
                 onChange={onFileChange}
+                ref={fileInputRef}
               />
               <div className={styles.actions}>
                 <button className={styles.button} type="submit" disabled={uploadPending}>
@@ -235,54 +324,11 @@ export default function HomePage() {
             </form>
 
             <section className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <h2>Result controls</h2>
-                <span className={styles.kicker}>Display</span>
-              </div>
-              <div className={styles.meta}>Sort</div>
-              <div className={styles.toggleRow}>
-                <button
-                  className={`${styles.toggle} ${
-                    sortMode === "relevance" ? styles.toggleActive : ""
-                  }`}
-                  type="button"
-                  onClick={() => setSortMode("relevance")}
-                >
-                  Relevance
-                </button>
-                <button
-                  className={`${styles.toggle} ${
-                    sortMode === "recency" ? styles.toggleActive : ""
-                  }`}
-                  type="button"
-                  onClick={() => setSortMode("recency")}
-                >
-                  Recency
-                </button>
-              </div>
-              <div className={styles.meta}>Filter</div>
-              <div className={styles.filterRow}>
-                <button
-                  className={`${styles.filter} ${
-                    activeFilter === "all" ? styles.filterActive : ""
-                  }`}
-                  type="button"
-                  onClick={() => setActiveFilter("all")}
-                >
-                  All
-                </button>
-                {(Object.keys(CATEGORY_META) as ResearchCategory[]).map((category) => (
-                  <button
-                    key={category}
-                    className={`${styles.filter} ${
-                      activeFilter === category ? styles.filterActive : ""
-                    }`}
-                    type="button"
-                    onClick={() => setActiveFilter(category)}
-                  >
-                    {CATEGORY_META[category].label}
-                  </button>
-                ))}
+              <div className={styles.helper}>
+                Domain filters currently applied to Exa:{" "}
+                {searchConfig.includeDomains.length > 0
+                  ? `${searchConfig.includeDomains.length} selected`
+                  : "none"}
               </div>
             </section>
           </aside>
@@ -303,6 +349,59 @@ export default function HomePage() {
                   items shown.
                 </div>
               )}
+            </div>
+
+            <div className={styles.resultsToolbar}>
+              <div className={styles.toolbarBlock}>
+                <div className={styles.meta}>Filter by category</div>
+                <div className={styles.filterRow}>
+                  <button
+                    className={`${styles.filter} ${
+                      activeFilter === "all" ? styles.filterActive : ""
+                    }`}
+                    type="button"
+                    onClick={() => setActiveFilter("all")}
+                  >
+                    All
+                  </button>
+                  {(Object.keys(CATEGORY_META) as ResearchCategory[]).map((category) => (
+                    <button
+                      key={category}
+                      className={`${styles.filter} ${
+                        activeFilter === category ? styles.filterActive : ""
+                      }`}
+                      type="button"
+                      onClick={() => setActiveFilter(category)}
+                    >
+                      {CATEGORY_META[category].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.toolbarBlock}>
+                <div className={styles.meta}>Sort</div>
+                <div className={styles.toggleRow}>
+                  <button
+                    className={`${styles.toggle} ${
+                      sortMode === "relevance" ? styles.toggleActive : ""
+                    }`}
+                    type="button"
+                    onClick={() => setSortMode("relevance")}
+                  >
+                    Relevance
+                  </button>
+                  <button
+                    className={`${styles.toggle} ${
+                      sortMode === "recency" ? styles.toggleActive : ""
+                    }`}
+                    type="button"
+                    onClick={() => setSortMode("recency")}
+                  >
+                    Recency
+                  </button>
+                </div>
+              </div>
             </div>
 
             {error && <div className={styles.error}>{error}</div>}
@@ -338,7 +437,7 @@ export default function HomePage() {
                       <div className={styles.kicker}>{CATEGORY_META[group.category].description}</div>
                       <h3>{group.heading}</h3>
                     </div>
-                    <div className={styles.query}>{group.searchQuery}</div>
+                    {showSearchQueries && <div className={styles.query}>{group.searchQuery}</div>}
                   </div>
 
                   {group.results.length === 0 ? (
@@ -373,6 +472,104 @@ export default function HomePage() {
               ))}
             </div>
           </section>
+
+          <aside
+            className={`${styles.panel} ${styles.configPanel} ${
+              configExpanded ? "" : styles.configPanelCollapsed
+            }`}
+          >
+            <div className={styles.configHeader}>
+              <div>
+                <div className={styles.kicker}>Configuration</div>
+                {configExpanded && <h2>Research controls</h2>}
+              </div>
+              <button
+                className={styles.iconButton}
+                type="button"
+                onClick={() => setConfigExpanded((current) => !current)}
+              >
+                {configExpanded ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            {configExpanded && (
+              <div className={styles.configBody}>
+                <section className={styles.configSection}>
+                  <div className={styles.sectionHeader}>
+                    <h3>Relevant legal sites</h3>
+                    <span className={styles.kicker}>Exa includeDomains</span>
+                  </div>
+                  <div className={styles.optionList}>
+                    {DOMAIN_PRESETS.map((preset) => (
+                      <label className={styles.option} key={preset.id}>
+                        <input
+                          checked={selectedPresetIds.includes(preset.id)}
+                          type="checkbox"
+                          onChange={() => togglePreset(preset.id)}
+                        />
+                        <span>
+                          <strong>{preset.label}</strong>
+                          <em>{preset.domain}</em>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </section>
+
+                <section className={styles.configSection}>
+                  <div className={styles.sectionHeader}>
+                    <h3>Additional domains</h3>
+                    <span className={styles.kicker}>Optional</span>
+                  </div>
+                  <textarea
+                    className={styles.configTextarea}
+                    placeholder="law360.com, regulations.gov"
+                    value={customDomains}
+                    onChange={(event) => setCustomDomains(event.target.value)}
+                  />
+                  <div className={styles.helper}>
+                    Separate domains with commas or new lines. These values are sent to Exa as
+                    `includeDomains`.
+                  </div>
+                </section>
+
+                <section className={styles.configSection}>
+                  <div className={styles.sectionHeader}>
+                    <h3>Visibility</h3>
+                    <span className={styles.kicker}>Debug</span>
+                  </div>
+                  <label className={styles.switchRow}>
+                    <span>Show actual search queries</span>
+                    <input
+                      checked={showSearchQueries}
+                      type="checkbox"
+                      onChange={(event) => setShowSearchQueries(event.target.checked)}
+                    />
+                  </label>
+                </section>
+
+                {showSearchQueries && resultState && (
+                  <section className={styles.configSection}>
+                    <div className={styles.sectionHeader}>
+                      <h3>Queries being sent</h3>
+                      <span className={styles.kicker}>Live</span>
+                    </div>
+                    <div className={styles.queryList}>
+                      {resultState.mode === "manual" ? (
+                        <div className={styles.queryCard}>{resultState.query}</div>
+                      ) : (
+                        <>
+                          <div className={styles.queryCard}>{resultState.angles.precedent}</div>
+                          <div className={styles.queryCard}>{resultState.angles.opposingCounsel}</div>
+                          <div className={styles.queryCard}>{resultState.angles.industryNews}</div>
+                        </>
+                      )}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
+          </aside>
         </section>
       </div>
     </main>

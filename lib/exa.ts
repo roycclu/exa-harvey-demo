@@ -8,6 +8,8 @@ type ExaRawResult = {
   title?: string;
   url?: string;
   text?: string;
+  summary?: string;
+  highlights?: string[];
   score?: number;
   publishedDate?: string;
 };
@@ -22,12 +24,45 @@ function getExaApiKey() {
   return apiKey;
 }
 
-function normalizeSnippet(text?: string) {
-  if (!text) {
-    return "No snippet available.";
+function truncate(text: string, maxLength = 320) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
   }
 
-  return text.replace(/\s+/g, " ").trim().slice(0, 280);
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}...`;
+}
+
+function getHostname(url?: string) {
+  if (!url) {
+    return "this source";
+  }
+
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "this source";
+  }
+}
+
+function normalizeSnippet(item: ExaRawResult, query: string) {
+  const highlight = item.highlights?.find((entry) => entry.trim());
+
+  if (highlight) {
+    return truncate(highlight);
+  }
+
+  if (item.summary?.trim()) {
+    return truncate(item.summary);
+  }
+
+  if (item.text?.trim()) {
+    return truncate(item.text);
+  }
+
+  const hostname = getHostname(item.url);
+  return `Preview unavailable from ${hostname}. This result was retrieved as a neural match for "${query}".`;
 }
 
 function normalizeResult(
@@ -39,7 +74,7 @@ function normalizeResult(
     id: item.id ?? `${category}-${item.url ?? crypto.randomUUID()}`,
     title: item.title?.trim() || item.url || "Untitled result",
     url: item.url || "",
-    snippet: normalizeSnippet(item.text),
+    snippet: normalizeSnippet(item, searchQuery),
     score: typeof item.score === "number" ? item.score : null,
     publishedDate: item.publishedDate ?? null,
     category,
@@ -50,11 +85,13 @@ function normalizeResult(
 export async function searchExa({
   query,
   numResults,
-  category
+  category,
+  includeDomains = []
 }: {
   query: string;
   numResults: number;
   category: ResearchCategory;
+  includeDomains?: string[];
 }): Promise<SearchResult[]> {
   const response = await fetch(EXA_SEARCH_URL, {
     method: "POST",
@@ -67,8 +104,19 @@ export async function searchExa({
       type: "neural",
       useAutoprompt: true,
       numResults,
-      text: {
-        maxCharacters: 400
+      ...(includeDomains.length > 0 ? { includeDomains } : {}),
+      contents: {
+        text: {
+          maxCharacters: 900
+        },
+        highlights: {
+          query,
+          numSentences: 2,
+          highlightsPerUrl: 1
+        },
+        summary: {
+          query: `Summarize why this source is relevant to: ${query}`
+        }
       }
     }),
     cache: "no-store"
