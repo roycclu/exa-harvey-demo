@@ -222,7 +222,7 @@ export default function IntelligencePage() {
       };
       console.groupCollapsed(`[Intelligence] ${activeTab} request`);
       console.log("Request", clientRequest);
-      console.log("Exa request preview", previewPayload);
+      console.log("Search request preview", previewPayload);
       console.groupEnd();
 
       const res = await fetch("/api/intelligence", {
@@ -304,7 +304,7 @@ export default function IntelligencePage() {
 
   function switchTab(tabId: TabId) {
     setActiveTab(tabId);
-    // Reset Westlaw mode when switching tabs so Exa results are front and center
+    // Reset Westlaw mode when switching tabs so live search results are front and center
     setWestlawMode((prev) => ({ ...prev, [tabId]: false }));
   }
 
@@ -333,7 +333,7 @@ export default function IntelligencePage() {
             <Link href="/" className={styles.navLink}>
               Neural Search →
             </Link>
-            <span className={styles.poweredBy}>Powered by Exa</span>
+            <span className={styles.poweredBy}>Live web research</span>
           </div>
         </div>
         <div className={styles.goldRule} />
@@ -416,7 +416,7 @@ export default function IntelligencePage() {
             <div className={styles.sectionLabel}>API Call Inspector</div>
             <div className={styles.endpoint}>
               <span className={styles.endpointMethod}>POST</span>
-              <span className={styles.endpointUrl}>api.exa.ai/search</span>
+              <span className={styles.endpointUrl}>External search API</span>
             </div>
           </div>
 
@@ -455,7 +455,7 @@ export default function IntelligencePage() {
         <div className={styles.resultsPanel}>
           <div className={styles.resultsPanelHeader}>
             <div className={styles.resultsPanelTitle}>
-              {isWestlaw ? "Westlaw Coverage" : "Exa Results"}
+              {isWestlaw ? "Westlaw Coverage" : "Live Search Results"}
               {ts.results !== null && !isWestlaw && !ts.pending && (
                 <span className={styles.resultCount}>{ts.results.length} results</span>
               )}
@@ -465,7 +465,7 @@ export default function IntelligencePage() {
               onClick={toggleWestlaw}
               type="button"
             >
-              {isWestlaw ? "← Back to Exa" : "vs Westlaw"}
+              {isWestlaw ? "← Back to Search" : "vs Westlaw"}
             </button>
           </div>
 
@@ -480,11 +480,11 @@ export default function IntelligencePage() {
                 <p className={styles.westlawMessage}>{cfg.westlawNote}</p>
                 <p className={styles.westlawSub}>
                   Traditional legal research platforms index curated case law and statutory
-                  databases. They cannot access the live web intelligence that Exa retrieves
+                  databases. They cannot access the live web intelligence retrieved
                   in real time for this class of signal.
                 </p>
                 <div className={styles.westlawExaNote}>
-                  Exa retrieves this intelligence live from the open web
+                  This intelligence is retrieved live from the open web
                 </div>
               </div>
             )}
@@ -508,7 +508,7 @@ export default function IntelligencePage() {
                 </div>
                 <div className={styles.errorMessage}>{ts.error}</div>
                 <div className={styles.errorContinue}>
-                  The query above was sent to Exa. You can continue the demo conversation
+                  The query above was sent to the search system. You can continue the demo conversation
                   using this query as context — the search intent and parameters are fully
                   visible in the inspector.
                 </div>
@@ -520,7 +520,7 @@ export default function IntelligencePage() {
               <div className={styles.emptyPane}>
                 <div className={styles.emptyGlyph}>◈</div>
                 <p className={styles.emptyText}>
-                  Run the search to retrieve live intelligence from Exa&rsquo;s web index.
+                  Run the search to retrieve live intelligence from the web.
                   The query and parameters are visible in the inspector.
                 </p>
               </div>

@@ -60,7 +60,7 @@ const CATEGORY_META: Record<ResearchCategory, { label: string; description: stri
 
 const PROVIDER_META: Record<SearchProvider, { label: string; subtitle: string }> = {
   exa: {
-    label: "Exa neural search",
+    label: "Neural search",
     subtitle: "semantic ranking"
   },
   google: {
@@ -148,7 +148,7 @@ export default function HomePage() {
     "supreme"
   ]);
   const [customDomains, setCustomDomains] = useState("");
-  const [showExaParams, setShowExaParams] = useState(false);
+  const [showSearchParams, setShowSearchParams] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(true);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [resultState, setResultState] = useState<ResultState>(null);
@@ -202,7 +202,7 @@ export default function HomePage() {
 
   const totalResults = useMemo(() => getTotalResults(sections), [sections]);
 
-  const currentExaRequests = useMemo(() => {
+  const currentSearchRequests = useMemo(() => {
     if (!resultState) {
       return [];
     }
@@ -356,7 +356,7 @@ export default function HomePage() {
             >
               Legal Intelligence →
             </Link>
-            <span className={styles.poweredBy}>Powered by Exa</span>
+            <span className={styles.poweredBy}>Live web research</span>
           </div>
         </div>
         <div className={styles.goldRule} />
@@ -404,7 +404,7 @@ export default function HomePage() {
                       {manualPending ? "Searching..." : "Run search"}
                     </button>
                     <div className={styles.microcopy}>
-                      Exa and Google run side by side against the same legal query.
+                      Neural and Google search run side by side against the same legal query.
                     </div>
                   </div>
                 </form>
@@ -449,7 +449,7 @@ export default function HomePage() {
                       {uploadPending ? "Analyzing..." : "Analyze document"}
                     </button>
                     <div className={styles.microcopy}>
-                      OpenAI extracts legal search angles, then Exa and Google search in parallel.
+                      OpenAI extracts legal search angles, then both search systems run in parallel.
                     </div>
                   </div>
                 </form>
@@ -519,7 +519,7 @@ export default function HomePage() {
 
               {!resultState && !error && !isPending && (
                 <div className={styles.emptyState}>
-                  Choose a search mode, run the workflow, and compare Exa neural retrieval against Google web search side by side.
+                  Choose a search mode, run the workflow, and compare neural retrieval against Google web search side by side.
                 </div>
               )}
 
@@ -572,7 +572,7 @@ export default function HomePage() {
                               <div className={styles.emptyCard}>
                                 {provider === "google"
                                   ? "No Google results returned. Check Google API configuration or broaden the query."
-                                  : "No Exa results returned for this category."}
+                                  : "No neural search results returned for this category."}
                               </div>
                             ) : (
                               section.results[provider].map((result) => (
@@ -658,22 +658,22 @@ export default function HomePage() {
 
                   <section className={styles.configSection}>
                     <label className={styles.switchRow}>
-                      <span>Show Exa request payloads</span>
+                      <span>Show neural search request payloads</span>
                       <input
-                        checked={showExaParams}
+                        checked={showSearchParams}
                         type="checkbox"
-                        onChange={(event) => setShowExaParams(event.target.checked)}
+                        onChange={(event) => setShowSearchParams(event.target.checked)}
                       />
                     </label>
                   </section>
 
-                  {showExaParams && currentExaRequests.length > 0 && (
+                  {showSearchParams && currentSearchRequests.length > 0 && (
                     <section className={styles.configSection}>
                       <div className={styles.sectionHeader}>
-                        <h3>Exa API parameters</h3>
+                        <h3>Neural search API parameters</h3>
                       </div>
                       <div className={styles.requestList}>
-                        {currentExaRequests.map((request) => (
+                        {currentSearchRequests.map((request) => (
                           <div className={styles.requestBlock} key={request.label}>
                             <div className={styles.requestLabel}>{request.label}</div>
                             <pre className={styles.requestCode}>{prettyJson(request.payload)}</pre>

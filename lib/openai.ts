@@ -49,7 +49,7 @@ export async function extractSearchAngles(documentText: string): Promise<SearchA
     '"precedent": search angle for relevant precedents, cases, statutes, or legal analysis.',
     '"opposingCounsel": search angle for opposing counsel history, litigation posture, firms, and prior matters.',
     '"industryNews": search angle for industry, market, and company news relevant to the dispute or contract.',
-    "Each value must be a concise Exa-ready natural language neural search query.",
+    "Each value must be a concise natural language neural search query.",
     "Do not include markdown, commentary, or extra keys."
   ].join("\n");
 

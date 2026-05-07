@@ -10,9 +10,9 @@ Legal research demo built with Next.js for Vercel deployment.
   - Relevant precedents
   - Opposing counsel history
   - Industry and company news
-- Side-by-side Exa and Google comparison results
+- Side-by-side neural search and Google comparison results
 - Domain filtering for legal sites
-- Exa request payload inspection in the configuration panel
+- Search request payload inspection in the configuration panel
 - Result sorting by relevance or recency
 - Category filters and graceful API error handling
 
@@ -34,6 +34,7 @@ npm run dev
 
 ## Environment variables
 
+- `EXA_API_KEY`: Required for the neural search provider
 - `OPENAI_API_KEY`: Required for document-angle extraction
 - `OPENAI_MODEL`: Optional override for the OpenAI model
 - `GOOGLE_API_KEY`: Optional, enables Google comparison search

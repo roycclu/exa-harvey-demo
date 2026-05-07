@@ -17,7 +17,7 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: "Harvey Neural Search",
-  description: "Neural legal research workflows powered by Exa and OpenAI."
+  description: "Neural legal research workflows powered by live web search and OpenAI."
 };
 
 export default function RootLayout({

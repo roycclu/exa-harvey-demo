@@ -45,7 +45,7 @@ export type IntelligenceResponse = {
 
 function getExaApiKey(): string {
   const key = process.env.EXA_API_KEY;
-  if (!key) throw new ApiError("Missing EXA_API_KEY environment variable.", 500);
+  if (!key) throw new ApiError("Missing search API environment variable: EXA_API_KEY.", 500);
   return key;
 }
 
@@ -155,7 +155,7 @@ export async function POST(req: Request) {
     if (!exaResponse.ok) {
       const details = await exaResponse.text();
       throw new ApiError(
-        `Exa search failed (${exaResponse.status}).${details ? ` ${details}` : ""}`,
+        `Search request failed (${exaResponse.status}).${details ? ` ${details}` : ""}`,
         exaResponse.status
       );
     }
