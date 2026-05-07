@@ -152,7 +152,7 @@ function buildPreviewPayload(
   return {
     query,
     ...restParams,
-    contents: { highlights: { numSentences: 2, highlightsPerUrl: 2 } }
+    contents: { highlights: { query, numSentences: 4, highlightsPerUrl: 2 } }
   };
 }
 

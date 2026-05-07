@@ -64,7 +64,7 @@ function buildQuery(tab: TabId, judgeName: string, firmName: string, entityName:
 }
 
 function buildExaRequest(tab: TabId, query: string): Record<string, unknown> {
-  const highlights = { numSentences: 2, highlightsPerUrl: 2 };
+  const highlights = { query, numSentences: 4, highlightsPerUrl: 2 };
 
   if (tab === "judge") {
     return {
