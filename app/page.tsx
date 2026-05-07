@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 
 import styles from "@/app/page.module.css";
 import type {
@@ -341,7 +342,22 @@ export default function HomePage() {
             <span className={styles.brandSep}>|</span>
             <span className={styles.brandProduct}>Neural Search</span>
           </div>
-          <span className={styles.poweredBy}>Powered by Exa</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <Link
+              href="/intelligence"
+              style={{
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--muted)",
+                textDecoration: "none"
+              }}
+            >
+              Legal Intelligence →
+            </Link>
+            <span className={styles.poweredBy}>Powered by Exa</span>
+          </div>
         </div>
         <div className={styles.goldRule} />
       </header>
