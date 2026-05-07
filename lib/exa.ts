@@ -1,5 +1,5 @@
 import { ApiError } from "@/lib/errors";
-import type { ResearchCategory, SearchResult } from "@/lib/types";
+import type { ExaSearchRequest, ResearchCategory, SearchResult } from "@/lib/types";
 
 const EXA_SEARCH_URL = "https://api.exa.ai/search";
 
@@ -78,7 +78,39 @@ function normalizeResult(
     score: typeof item.score === "number" ? item.score : null,
     publishedDate: item.publishedDate ?? null,
     category,
-    searchQuery
+    searchQuery,
+    provider: "exa"
+  };
+}
+
+export function buildExaSearchRequest({
+  query,
+  numResults,
+  includeDomains = []
+}: {
+  query: string;
+  numResults: number;
+  includeDomains?: string[];
+}): ExaSearchRequest {
+  return {
+    query,
+    type: "neural",
+    useAutoprompt: true,
+    numResults,
+    ...(includeDomains.length > 0 ? { includeDomains } : {}),
+    contents: {
+      text: {
+        maxCharacters: 900
+      },
+      highlights: {
+        query,
+        numSentences: 2,
+        highlightsPerUrl: 1
+      },
+      summary: {
+        query: `Summarize why this source is relevant to: ${query}`
+      }
+    }
   };
 }
 
@@ -93,32 +125,15 @@ export async function searchExa({
   category: ResearchCategory;
   includeDomains?: string[];
 }): Promise<SearchResult[]> {
+  const requestPayload = buildExaSearchRequest({ query, numResults, includeDomains });
+
   const response = await fetch(EXA_SEARCH_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-api-key": getExaApiKey()
     },
-    body: JSON.stringify({
-      query,
-      type: "neural",
-      useAutoprompt: true,
-      numResults,
-      ...(includeDomains.length > 0 ? { includeDomains } : {}),
-      contents: {
-        text: {
-          maxCharacters: 900
-        },
-        highlights: {
-          query,
-          numSentences: 2,
-          highlightsPerUrl: 1
-        },
-        summary: {
-          query: `Summarize why this source is relevant to: ${query}`
-        }
-      }
-    }),
+    body: JSON.stringify(requestPayload),
     cache: "no-store"
   });
 

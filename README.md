@@ -1,16 +1,18 @@
-# Exa Legal Research Demo
+# Harvey Neural Search Demo
 
-Minimal legal research demo built with Next.js for Vercel deployment.
+Legal research demo built with Next.js for Vercel deployment.
 
 ## Features
 
-- Manual neural search against Exa with top 5-8 results
+- Natural language legal search
 - Document upload for text or PDF inputs
 - OpenAI-based extraction of three research angles:
   - Relevant precedents
   - Opposing counsel history
   - Industry and company news
-- Parallel Exa searches grouped by category
+- Side-by-side Exa and Google comparison results
+- Domain filtering for legal sites
+- Exa request payload inspection in the configuration panel
 - Result sorting by relevance or recency
 - Category filters and graceful API error handling
 
@@ -35,6 +37,8 @@ npm run dev
 - `EXA_API_KEY`: Required for Exa neural search
 - `OPENAI_API_KEY`: Required for document-angle extraction
 - `OPENAI_MODEL`: Optional override for the OpenAI model
+- `GOOGLE_API_KEY`: Optional, enables Google comparison search
+- `GOOGLE_CSE_ID`: Optional, required with `GOOGLE_API_KEY` for Google comparison search
 
 ## Deploy to Vercel
 

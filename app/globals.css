@@ -1,5 +1,5 @@
 :root {
-  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Times New Roman", serif;
+  --font-display: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-sans: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --bg: #f4efe5;
   --panel: rgba(252, 248, 241, 0.92);
@@ -41,12 +41,4 @@ input,
 textarea,
 select {
   font: inherit;
-}
-
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--font-display), serif;
-  font-weight: 600;
 }

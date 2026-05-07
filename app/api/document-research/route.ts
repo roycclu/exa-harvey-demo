@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { extractDocumentText } from "@/lib/document";
 import { ApiError, getErrorMessage } from "@/lib/errors";
-import { searchExa } from "@/lib/exa";
+import { buildExaSearchRequest, searchExa } from "@/lib/exa";
+import { buildGoogleSearchRequest, searchGoogle } from "@/lib/google";
 import { extractSearchAngles } from "@/lib/openai";
 import type { DocumentSearchResponse, ResearchCategory } from "@/lib/types";
 
@@ -41,7 +42,14 @@ export async function POST(request: Request) {
     const documentText = await extractDocumentText(file);
     const angles = await extractSearchAngles(documentText);
 
-    const [precedent, opposingCounsel, industryNews] = await Promise.all([
+    const [
+      exaPrecedent,
+      exaOpposingCounsel,
+      exaIndustryNews,
+      googlePrecedent,
+      googleOpposingCounsel,
+      googleIndustryNews
+    ] = await Promise.all([
       searchExa({
         query: angles.precedent,
         numResults: CATEGORY_CONFIG.precedent.numResults,
@@ -59,6 +67,24 @@ export async function POST(request: Request) {
         numResults: CATEGORY_CONFIG.industryNews.numResults,
         category: "industryNews",
         includeDomains
+      }),
+      searchGoogle({
+        query: angles.precedent,
+        numResults: CATEGORY_CONFIG.precedent.numResults,
+        category: "precedent",
+        includeDomains
+      }),
+      searchGoogle({
+        query: angles.opposingCounsel,
+        numResults: CATEGORY_CONFIG.opposingCounsel.numResults,
+        category: "opposingCounsel",
+        includeDomains
+      }),
+      searchGoogle({
+        query: angles.industryNews,
+        numResults: CATEGORY_CONFIG.industryNews.numResults,
+        category: "industryNews",
+        includeDomains
       })
     ]);
 
@@ -68,9 +94,54 @@ export async function POST(request: Request) {
       extractedTextPreview: documentText.slice(0, 600),
       angles,
       results: {
-        precedent,
-        opposingCounsel,
-        industryNews
+        precedent: {
+          exa: exaPrecedent,
+          google: googlePrecedent
+        },
+        opposingCounsel: {
+          exa: exaOpposingCounsel,
+          google: googleOpposingCounsel
+        },
+        industryNews: {
+          exa: exaIndustryNews,
+          google: googleIndustryNews
+        }
+      },
+      requests: {
+        exa: {
+          precedent: buildExaSearchRequest({
+            query: angles.precedent,
+            numResults: CATEGORY_CONFIG.precedent.numResults,
+            includeDomains
+          }),
+          opposingCounsel: buildExaSearchRequest({
+            query: angles.opposingCounsel,
+            numResults: CATEGORY_CONFIG.opposingCounsel.numResults,
+            includeDomains
+          }),
+          industryNews: buildExaSearchRequest({
+            query: angles.industryNews,
+            numResults: CATEGORY_CONFIG.industryNews.numResults,
+            includeDomains
+          })
+        },
+        google: {
+          precedent: buildGoogleSearchRequest({
+            query: angles.precedent,
+            numResults: CATEGORY_CONFIG.precedent.numResults,
+            includeDomains
+          }),
+          opposingCounsel: buildGoogleSearchRequest({
+            query: angles.opposingCounsel,
+            numResults: CATEGORY_CONFIG.opposingCounsel.numResults,
+            includeDomains
+          }),
+          industryNews: buildGoogleSearchRequest({
+            query: angles.industryNews,
+            numResults: CATEGORY_CONFIG.industryNews.numResults,
+            includeDomains
+          })
+        }
       }
     };
 
