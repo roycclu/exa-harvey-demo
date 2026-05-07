@@ -173,8 +173,8 @@ export default function HomePage() {
       return [
         {
           category: "precedent",
-          heading: "Manual search",
-          description: "Natural language legal question",
+          heading: "Search results",
+          description: "Query-driven legal research",
           searchQuery: resultState.query,
           exaRequest: resultState.requests.exa,
           results: {
@@ -210,7 +210,7 @@ export default function HomePage() {
     if (resultState.mode === "manual") {
       return [
         {
-          label: "Manual search",
+          label: "Search",
           payload: resultState.requests.exa
         }
       ];
@@ -257,13 +257,13 @@ export default function HomePage() {
       const payload = await response.json();
 
       if (!response.ok) {
-        throw new Error(payload.error || "Manual search failed.");
+        throw new Error(payload.error || "Search failed.");
       }
 
       setResultState(payload as ManualSearchResponse);
       setActiveFilter("all");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Manual search failed.");
+      setError(requestError instanceof Error ? requestError.message : "Search failed.");
     } finally {
       setManualPending(false);
     }
