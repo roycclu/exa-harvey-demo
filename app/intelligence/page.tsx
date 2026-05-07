@@ -399,11 +399,6 @@ export default function IntelligencePage() {
           </div>
 
           <div className={styles.inspectorSection}>
-            <div className={styles.sectionLabel}>Live API call preview</div>
-            <div className={styles.queryBlock}>{String(previewPayload.query ?? "")}</div>
-          </div>
-
-          <div className={styles.inspectorSection}>
             <div className={styles.sectionLabel}>Parameters to be sent</div>
             <pre className={styles.jsonBlock}>{prettyJson(previewPayload)}</pre>
           </div>
