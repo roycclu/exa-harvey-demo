@@ -6,6 +6,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const EXA_SEARCH_URL = "https://api.exa.ai/search";
+const COUNSEL_INCLUDE_DOMAINS = [
+  "law360.com",
+  "reuters.com",
+  "courtlistener.org",
+  "bloomberg.com"
+];
 
 export type TabId = "judge" | "counsel" | "entity";
 
@@ -43,7 +49,7 @@ function buildQuery(tab: TabId, judgeName: string, firmName: string, entityName:
     return `Judge ${judgeName} ruling patterns summary judgment patent infringement federal court`;
   }
   if (tab === "counsel") {
-    return `${firmName} litigation strategy patent infringement technology companies recent outcomes`;
+    return `${firmName} patent infringement cases outcomes wins losses 2023-2025`;
   }
   return `${entityName} regulatory investigations antitrust patent disputes 2025`;
 }
@@ -68,6 +74,7 @@ function buildExaRequest(tab: TabId, query: string): Record<string, unknown> {
       category: "news",
       numResults: 8,
       startPublishedDate: maxAgeToIso(168),
+      includeDomains: COUNSEL_INCLUDE_DOMAINS,
       contents: { highlights }
     };
   }

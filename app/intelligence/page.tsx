@@ -29,6 +29,13 @@ type TabState = {
   executedResponse: Record<string, unknown> | null;
 };
 
+const COUNSEL_INCLUDE_DOMAINS = [
+  "law360.com",
+  "reuters.com",
+  "courtlistener.org",
+  "bloomberg.com"
+];
+
 // ─── Tab configuration ───────────────────────────────────────────────────────
 
 const TAB_CONFIG = {
@@ -53,13 +60,14 @@ const TAB_CONFIG = {
     label: "Opposing Counsel",
     description: "Real-time firm intelligence",
     buildQuery: (firmName: string) =>
-      `${firmName} litigation strategy patent infringement technology companies recent outcomes`,
+      `${firmName} patent infringement cases outcomes wins losses 2023-2025`,
     previewParams: {
       type: "fast",
       category: "news",
       numResults: 8,
       maxAgeHours: 168,
-      highlights: true
+      highlights: true,
+      includeDomains: COUNSEL_INCLUDE_DOMAINS
     },
     westlawNote:
       "Westlaw does not index real-time firm intelligence. Coverage limited to indexed case law only.",
@@ -86,7 +94,7 @@ const TAB_CONFIG = {
   }
 } as const;
 
-const TABS: TabId[] = ["judge", "counsel", "entity"];
+const TABS: TabId[] = ["entity", "counsel", "judge"];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -103,6 +111,26 @@ function formatDate(date: string | null): string {
 
 function prettyJson(value: unknown): string {
   return JSON.stringify(value, null, 2);
+}
+
+function renderHighlightedText(text: string, term: string) {
+  if (!text || !term.trim()) {
+    return text;
+  }
+
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`(${escaped})`, "ig");
+  const parts = text.split(pattern);
+
+  return parts.map((part, index) =>
+    part.toLowerCase() === term.toLowerCase() ? (
+      <mark className={styles.keywordHighlight} key={`${part}-${index}`}>
+        {part}
+      </mark>
+    ) : (
+      <span key={`${part}-${index}`}>{part}</span>
+    )
+  );
 }
 
 function buildPreviewPayload(
@@ -504,12 +532,18 @@ export default function IntelligencePage() {
                             {result.highlights.slice(0, 2).map((hl, i) => (
                               <div key={i} className={styles.highlight}>
                                 <span className={styles.highlightLabel}>Highlight</span>
-                                {hl}
+                                {activeTab === "counsel"
+                                  ? renderHighlightedText(hl, firmName)
+                                  : hl}
                               </div>
                             ))}
                           </div>
                         ) : result.snippet ? (
-                          <p className={styles.snippet}>{result.snippet}</p>
+                          <p className={styles.snippet}>
+                            {activeTab === "counsel"
+                              ? renderHighlightedText(result.snippet, firmName)
+                              : result.snippet}
+                          </p>
                         ) : null}
                       </article>
                     ))
