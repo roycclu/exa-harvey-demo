@@ -54,9 +54,8 @@ function buildExaRequest(tab: TabId, query: string): Record<string, unknown> {
     return {
       query,
       type: "auto",
-      category: "company",
+      category: "people",
       numResults: 8,
-      startPublishedDate: maxAgeToIso(720),
       contents: { highlights }
     };
   }
