@@ -34,7 +34,6 @@ npm run dev
 
 ## Environment variables
 
-- `EXA_API_KEY`: Required for Exa neural search
 - `OPENAI_API_KEY`: Required for document-angle extraction
 - `OPENAI_MODEL`: Optional override for the OpenAI model
 - `GOOGLE_API_KEY`: Optional, enables Google comparison search
