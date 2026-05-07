@@ -6,6 +6,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const EXA_SEARCH_URL = "https://api.exa.ai/search";
+const INTELLIGENCE_SYSTEM_PROMPT =
+  "Return results that directly mention or profile the specific person, firm, or entity named in the query. Prioritize results where the named entity is the primary subject, not just a passing reference.";
+const JUDGE_INCLUDE_DOMAINS = [
+  "courtlistener.org",
+  "law360.com",
+  "reuters.com",
+  "jurist.org",
+  "scotusblog.com"
+];
 const COUNSEL_INCLUDE_DOMAINS = [
   "law360.com",
   "reuters.com",
@@ -46,7 +55,7 @@ function maxAgeToIso(maxAgeHours: number): string {
 
 function buildQuery(tab: TabId, judgeName: string, firmName: string, entityName: string): string {
   if (tab === "judge") {
-    return `Judge ${judgeName} ruling patterns summary judgment patent infringement federal court`;
+    return `${judgeName} judge rulings decisions Northern District California`;
   }
   if (tab === "counsel") {
     return `${firmName} patent infringement cases outcomes wins losses 2023-2025`;
@@ -61,8 +70,9 @@ function buildExaRequest(tab: TabId, query: string): Record<string, unknown> {
     return {
       query,
       type: "auto",
-      category: "people",
       numResults: 8,
+      includeDomains: JUDGE_INCLUDE_DOMAINS,
+      systemPrompt: INTELLIGENCE_SYSTEM_PROMPT,
       contents: { highlights }
     };
   }
@@ -75,6 +85,7 @@ function buildExaRequest(tab: TabId, query: string): Record<string, unknown> {
       numResults: 8,
       startPublishedDate: maxAgeToIso(168),
       includeDomains: COUNSEL_INCLUDE_DOMAINS,
+      systemPrompt: INTELLIGENCE_SYSTEM_PROMPT,
       contents: { highlights }
     };
   }
@@ -86,7 +97,7 @@ function buildExaRequest(tab: TabId, query: string): Record<string, unknown> {
     category: "news",
     numResults: 10,
     startPublishedDate: maxAgeToIso(72),
-    systemPrompt: "Prefer official sources and regulatory filings. Avoid duplicate results.",
+    systemPrompt: INTELLIGENCE_SYSTEM_PROMPT,
     contents: { highlights }
   };
 }

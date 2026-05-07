@@ -464,6 +464,17 @@
   gap: 14px;
 }
 
+.resultsNote {
+  margin: 0 20px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
 /* ─── WESTLAW COVERAGE PANE ─── */
 
 .westlawPane {

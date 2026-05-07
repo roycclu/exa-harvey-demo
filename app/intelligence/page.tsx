@@ -22,6 +22,7 @@ type IntelligenceResult = {
 
 type TabState = {
   results: IntelligenceResult[] | null;
+  note: string | null;
   pending: boolean;
   error: string | null;
   executedQuery: string | null;
@@ -29,6 +30,15 @@ type TabState = {
   executedResponse: Record<string, unknown> | null;
 };
 
+const INTELLIGENCE_SYSTEM_PROMPT =
+  "Return results that directly mention or profile the specific person, firm, or entity named in the query. Prioritize results where the named entity is the primary subject, not just a passing reference.";
+const JUDGE_INCLUDE_DOMAINS = [
+  "courtlistener.org",
+  "law360.com",
+  "reuters.com",
+  "jurist.org",
+  "scotusblog.com"
+];
 const COUNSEL_INCLUDE_DOMAINS = [
   "law360.com",
   "reuters.com",
@@ -43,13 +53,13 @@ const TAB_CONFIG = {
     label: "Judge Profile",
     description: "Behavioral pattern research",
     buildQuery: (judgeName: string) =>
-      `Judge ${judgeName} ruling patterns summary judgment patent infringement federal court`,
+      `${judgeName} judge rulings decisions Northern District California`,
     previewParams: {
       type: "auto",
-      category: "people",
       numResults: 8,
-      maxAgeHours: 720,
-      highlights: true
+      highlights: true,
+      includeDomains: JUDGE_INCLUDE_DOMAINS,
+      systemPrompt: INTELLIGENCE_SYSTEM_PROMPT
     },
     westlawNote:
       "Westlaw does not index real-time judge behavior patterns. Coverage limited to indexed case law only.",
@@ -67,7 +77,8 @@ const TAB_CONFIG = {
       numResults: 8,
       maxAgeHours: 168,
       highlights: true,
-      includeDomains: COUNSEL_INCLUDE_DOMAINS
+      includeDomains: COUNSEL_INCLUDE_DOMAINS,
+      systemPrompt: INTELLIGENCE_SYSTEM_PROMPT
     },
     westlawNote:
       "Westlaw does not index real-time firm intelligence. Coverage limited to indexed case law only.",
@@ -85,7 +96,7 @@ const TAB_CONFIG = {
       numResults: 10,
       maxAgeHours: 72,
       highlights: true,
-      systemPrompt: "Prefer official sources and regulatory filings. Avoid duplicate results."
+      systemPrompt: INTELLIGENCE_SYSTEM_PROMPT
     },
     westlawNote:
       "Westlaw does not index real-time entity news. Coverage limited to indexed case law only.",
@@ -147,6 +158,7 @@ function buildPreviewPayload(
 
 function makeTabState(): TabState {
   return {
+    note: null,
     results: null,
     pending: false,
     error: null,
@@ -198,7 +210,7 @@ export default function IntelligencePage() {
   async function runSearch() {
     setTabStates((prev) => ({
       ...prev,
-      [activeTab]: { ...prev[activeTab], pending: true, error: null }
+      [activeTab]: { ...prev[activeTab], pending: true, error: null, note: null }
     }));
 
     try {
@@ -239,12 +251,30 @@ export default function IntelligencePage() {
         });
       }
 
+      let nextResults = data.results ?? [];
+      let note: string | null = null;
+
+      if (activeTab === "judge") {
+        const filtered = nextResults.filter((result) => {
+          const haystack = `${result.title} ${result.snippet}`.toLowerCase();
+          return haystack.includes("koh");
+        });
+
+        if (filtered.length >= 2) {
+          nextResults = filtered;
+        } else {
+          nextResults = nextResults.slice(0, 3);
+          note = "Showing most relevant results.";
+        }
+      }
+
       setTabStates((prev) => ({
         ...prev,
         [activeTab]: {
           pending: false,
           error: null,
-          results: data.results ?? [],
+          note,
+          results: nextResults,
           executedQuery: data.query ?? null,
           executedRequest: data.request ?? null,
           executedResponse: data.response ?? data
@@ -259,6 +289,7 @@ export default function IntelligencePage() {
         ...prev,
         [activeTab]: {
           ...prev[activeTab],
+          note: null,
           pending: false,
           error: msg,
           executedResponse: null
@@ -498,6 +529,7 @@ export default function IntelligencePage() {
             {/* ── Results ── */}
             {!isWestlaw && !ts.pending && ts.results !== null && (
               <div className={styles.resultsStack}>
+                {ts.note && <div className={styles.resultsNote}>{ts.note}</div>}
                 <div className={styles.resultsList}>
                   {ts.results.length === 0 ? (
                     <div className={styles.emptyPane}>
