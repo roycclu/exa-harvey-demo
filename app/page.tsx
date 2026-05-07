@@ -86,6 +86,14 @@ function formatDate(date: string | null) {
   }).format(parsed);
 }
 
+function extractDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 function sortResults(results: SearchResult[], sortMode: SortMode) {
   return [...results].sort((left, right) => {
     if (sortMode === "recency") {
@@ -325,336 +333,345 @@ export default function HomePage() {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.shell}>
-        <section className={styles.header}>
+    <div className={styles.page}>
+      <header className={styles.siteHeader}>
+        <div className={styles.headerInner}>
           <div className={styles.brandRow}>
-            <div className={styles.brand}>Harvey Neural Search</div>
-            <div className={styles.brandSubtle}>powered by Exa</div>
+            <span className={styles.brandName}>Harvey</span>
+            <span className={styles.brandSep}>|</span>
+            <span className={styles.brandProduct}>Neural Search</span>
           </div>
-          <p className={styles.headerCopy}>
-            Trusted research workflows for high-stakes legal matters, with side-by-side comparison
-            between Exa neural retrieval and Google web search.
-          </p>
-        </section>
+          <span className={styles.poweredBy}>Powered by Exa</span>
+        </div>
+        <div className={styles.goldRule} />
+      </header>
 
-        <section className={styles.grid}>
-          <aside className={`${styles.panel} ${styles.workspace}`}>
-            <div className={styles.modeToggle}>
-              <button
-                className={`${styles.modeButton} ${
-                  searchMode === "manual" ? styles.modeButtonActive : ""
-                }`}
-                type="button"
-                onClick={() => setSearchMode("manual")}
-              >
-                Natural language search
-              </button>
-              <button
-                className={`${styles.modeButton} ${
-                  searchMode === "document" ? styles.modeButtonActive : ""
-                }`}
-                type="button"
-                onClick={() => setSearchMode("document")}
-              >
-                Document upload
-              </button>
-            </div>
-
-            {searchMode === "manual" ? (
-              <form className={styles.searchForm} onSubmit={handleManualSearch}>
-                <div className={styles.sectionHeader}>
-                  <h2>Describe the legal issue</h2>
-                </div>
-                <textarea
-                  className={styles.queryInput}
-                  value={manualQuery}
-                  onChange={(event) => setManualQuery(event.target.value)}
-                  placeholder="Enter a legal question, dispute context, or research objective."
-                />
-                <div className={styles.actionRow}>
-                  <button className={styles.primaryButton} type="submit" disabled={isPending}>
-                    {manualPending ? "Searching..." : "Run search"}
-                  </button>
-                  <div className={styles.microcopy}>
-                    Exa and Google run side by side against the same legal query.
-                  </div>
-                </div>
-              </form>
-            ) : (
-              <form className={styles.searchForm} onSubmit={handleDocumentSearch}>
-                <div className={styles.sectionHeader}>
-                  <h2>Upload the matter documents</h2>
-                </div>
-                <div
-                  className={`${styles.dropzone} ${isDraggingFile ? styles.dropzoneActive : ""}`}
-                  onDragOver={onDragOver}
-                  onDragLeave={onDragLeave}
-                  onDrop={onDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      fileInputRef.current?.click();
-                    }
-                  }}
-                >
-                  <div className={styles.dropzoneTitle}>
-                    {uploadFile ? uploadFile.name : "Drag and drop a contract, memo, or case summary"}
-                  </div>
-                  <div className={styles.dropzoneMeta}>
-                    {uploadFile
-                      ? `${Math.max(1, Math.round(uploadFile.size / 1024))} KB ready for analysis`
-                      : "or click to upload a text file or PDF"}
-                  </div>
-                </div>
-                <input
-                  className={styles.fileInput}
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.txt,.md,.rtf,text/plain,application/pdf"
-                  onChange={onFileChange}
-                />
-                <div className={styles.actionRow}>
-                  <button className={styles.primaryButton} type="submit" disabled={isPending}>
-                    {uploadPending ? "Analyzing..." : "Analyze document"}
-                  </button>
-                  <div className={styles.microcopy}>
-                    OpenAI extracts legal search angles, then Exa and Google search in parallel.
-                  </div>
-                </div>
-              </form>
-            )}
-          </aside>
-
-          <section className={`${styles.panel} ${styles.results}`}>
-            <div className={styles.resultsHeader}>
-              <div>
-                <div className={styles.label}>Search results</div>
-                <h2>{resultState?.mode === "document" ? "Matter comparison view" : "Comparison view"}</h2>
-              </div>
-              {resultState && (
-                <div className={styles.summaryMeta}>
-                  {totalResults} results shown. Sorted by {sortMode}.
-                </div>
-              )}
-            </div>
-
-            <div className={styles.controlsRow}>
-              <div className={styles.controlsInline}>
-                <span className={styles.controlLabel}>Filter</span>
+      <main className={styles.content}>
+        <div className={styles.shell}>
+          <section className={styles.grid}>
+            {/* ── Left panel: search input ── */}
+            <aside className={`${styles.panel} ${styles.workspace}`}>
+              <div className={styles.modeToggle}>
                 <button
-                  className={`${styles.chip} ${activeFilter === "all" ? styles.chipActive : ""}`}
-                  type="button"
-                  onClick={() => setActiveFilter("all")}
-                >
-                  All
-                </button>
-                {(Object.keys(CATEGORY_META) as ResearchCategory[]).map((category) => (
-                  <button
-                    key={category}
-                    className={`${styles.chip} ${
-                      activeFilter === category ? styles.chipActive : ""
-                    }`}
-                    type="button"
-                    onClick={() => setActiveFilter(category)}
-                  >
-                    {CATEGORY_META[category].label}
-                  </button>
-                ))}
-              </div>
-
-              <div className={styles.controlsInline}>
-                <span className={styles.controlLabel}>Sort</span>
-                <button
-                  className={`${styles.chip} ${
-                    sortMode === "relevance" ? styles.chipActive : ""
+                  className={`${styles.modeButton} ${
+                    searchMode === "manual" ? styles.modeButtonActive : ""
                   }`}
                   type="button"
-                  onClick={() => setSortMode("relevance")}
+                  onClick={() => setSearchMode("manual")}
                 >
-                  Relevance
+                  Natural language
                 </button>
                 <button
-                  className={`${styles.chip} ${sortMode === "recency" ? styles.chipActive : ""}`}
+                  className={`${styles.modeButton} ${
+                    searchMode === "document" ? styles.modeButtonActive : ""
+                  }`}
                   type="button"
-                  onClick={() => setSortMode("recency")}
+                  onClick={() => setSearchMode("document")}
                 >
-                  Recency
+                  Document upload
                 </button>
               </div>
-            </div>
 
-            {error && <div className={styles.error}>{error}</div>}
-
-            {!resultState && !error && (
-              <div className={styles.emptyState}>
-                Choose a search mode, run the workflow, and compare Exa against Google side by
-                side.
-              </div>
-            )}
-
-            {resultState?.mode === "document" && (
-              <div className={styles.documentMeta}>
-                <div className={styles.documentMetaItem}>
-                  <span>Document</span>
-                  <strong>{resultState.filename}</strong>
-                </div>
-                <div className={styles.documentMetaItem}>
-                  <span>Angles generated</span>
-                  <strong>Precedent, opposing counsel, industry news</strong>
-                </div>
-              </div>
-            )}
-
-            <div className={styles.sections}>
-              {sections.map((section) => (
-                <section className={styles.sectionCard} key={section.category}>
-                  <div className={styles.sectionTop}>
-                    <div>
-                      <div className={styles.label}>{section.description}</div>
-                      <h3>{section.heading}</h3>
-                    </div>
-                    <div className={styles.sectionQuery}>{section.searchQuery}</div>
-                  </div>
-
-                  <div className={styles.providerGrid}>
-                    {(["exa", "google"] as SearchProvider[]).map((provider) => (
-                      <div className={styles.providerColumn} key={provider}>
-                        <div className={styles.providerHeader}>
-                          <div>
-                            <div className={styles.providerTitle}>{PROVIDER_META[provider].label}</div>
-                            <div className={styles.providerSubtitle}>
-                              {PROVIDER_META[provider].subtitle}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className={styles.cards}>
-                          {section.results[provider].length === 0 ? (
-                            <div className={styles.emptyCard}>
-                              {provider === "google"
-                                ? "No Google results returned. Check Google API configuration or broaden the query."
-                                : "No Exa results returned for this category."}
-                            </div>
-                          ) : (
-                            section.results[provider].map((result) => (
-                              <article className={styles.card} key={result.id}>
-                                <a href={result.url} target="_blank" rel="noreferrer">
-                                  <h4 className={styles.cardTitle}>{result.title}</h4>
-                                </a>
-                                <a
-                                  className={styles.url}
-                                  href={result.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  {result.url}
-                                </a>
-                                <p className={styles.snippet}>{result.snippet}</p>
-                                <div className={styles.cardMeta}>
-                                  <span>{CATEGORY_META[result.category].label}</span>
-                                  <span>{formatDate(result.publishedDate)}</span>
-                                </div>
-                              </article>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </section>
-
-          <aside
-            className={`${styles.panel} ${styles.configPanel} ${
-              configExpanded ? "" : styles.configPanelCollapsed
-            }`}
-          >
-            <div className={styles.configHeader}>
-              <div>
-                <div className={styles.label}>Configuration</div>
-                {configExpanded && <h2>Search controls</h2>}
-              </div>
-              <button
-                className={styles.secondaryButton}
-                type="button"
-                onClick={() => setConfigExpanded((current) => !current)}
-              >
-                {configExpanded ? "Collapse" : "Open"}
-              </button>
-            </div>
-
-            {configExpanded && (
-              <div className={styles.configBody}>
-                <section className={styles.configSection}>
+              {searchMode === "manual" ? (
+                <form className={styles.searchForm} onSubmit={handleManualSearch}>
                   <div className={styles.sectionHeader}>
-                    <h3>Relevant legal sites</h3>
-                  </div>
-                  <div className={styles.optionList}>
-                    {DOMAIN_PRESETS.map((preset) => (
-                      <label className={styles.option} key={preset.id}>
-                        <input
-                          checked={selectedPresetIds.includes(preset.id)}
-                          type="checkbox"
-                          onChange={() => togglePreset(preset.id)}
-                        />
-                        <span>
-                          <strong>{preset.label}</strong>
-                          <em>{preset.domain}</em>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </section>
-
-                <section className={styles.configSection}>
-                  <div className={styles.sectionHeader}>
-                    <h3>Additional domains</h3>
+                    <h2>Describe the legal issue</h2>
                   </div>
                   <textarea
-                    className={styles.configTextarea}
-                    placeholder="law360.com, regulations.gov"
-                    value={customDomains}
-                    onChange={(event) => setCustomDomains(event.target.value)}
+                    className={styles.queryInput}
+                    value={manualQuery}
+                    onChange={(event) => setManualQuery(event.target.value)}
+                    placeholder="Enter a legal question, dispute context, or research objective."
                   />
-                </section>
-
-                <section className={styles.configSection}>
-                  <label className={styles.switchRow}>
-                    <span>Show Exa request payloads</span>
-                    <input
-                      checked={showExaParams}
-                      type="checkbox"
-                      onChange={(event) => setShowExaParams(event.target.checked)}
-                    />
-                  </label>
-                </section>
-
-                {showExaParams && currentExaRequests.length > 0 && (
-                  <section className={styles.configSection}>
-                    <div className={styles.sectionHeader}>
-                      <h3>Exa API parameters</h3>
+                  <div className={styles.actionRow}>
+                    <button className={styles.primaryButton} type="submit" disabled={isPending}>
+                      {manualPending ? "Searching..." : "Run search"}
+                    </button>
+                    <div className={styles.microcopy}>
+                      Exa and Google run side by side against the same legal query.
                     </div>
-                    <div className={styles.requestList}>
-                      {currentExaRequests.map((request) => (
-                        <div className={styles.requestBlock} key={request.label}>
-                          <div className={styles.requestLabel}>{request.label}</div>
-                          <pre className={styles.requestCode}>{prettyJson(request.payload)}</pre>
+                  </div>
+                </form>
+              ) : (
+                <form className={styles.searchForm} onSubmit={handleDocumentSearch}>
+                  <div className={styles.sectionHeader}>
+                    <h2>Upload matter documents</h2>
+                  </div>
+                  <div
+                    className={`${styles.dropzone} ${isDraggingFile ? styles.dropzoneActive : ""}`}
+                    onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                    onDrop={onDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                  >
+                    <div className={styles.dropzoneTitle}>
+                      {uploadFile ? uploadFile.name : "Drag and drop a contract, memo, or case summary"}
+                    </div>
+                    <div className={styles.dropzoneMeta}>
+                      {uploadFile
+                        ? `${Math.max(1, Math.round(uploadFile.size / 1024))} KB ready for analysis`
+                        : "or click to upload — PDF, TXT, or RTF"}
+                    </div>
+                  </div>
+                  <input
+                    className={styles.fileInput}
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.txt,.md,.rtf,text/plain,application/pdf"
+                    onChange={onFileChange}
+                  />
+                  <div className={styles.actionRow}>
+                    <button className={styles.primaryButton} type="submit" disabled={isPending}>
+                      {uploadPending ? "Analyzing..." : "Analyze document"}
+                    </button>
+                    <div className={styles.microcopy}>
+                      OpenAI extracts legal search angles, then Exa and Google search in parallel.
+                    </div>
+                  </div>
+                </form>
+              )}
+            </aside>
+
+            {/* ── Center panel: results ── */}
+            <section className={`${styles.panel} ${styles.results}`}>
+              <div className={styles.resultsHeader}>
+                <div>
+                  <div className={styles.label}>Search results</div>
+                  <h2>{resultState?.mode === "document" ? "Matter comparison view" : "Comparison view"}</h2>
+                </div>
+                {resultState && (
+                  <div className={styles.summaryMeta}>
+                    {totalResults} results &middot; sorted by {sortMode}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.controlsRow}>
+                <div className={styles.controlsInline}>
+                  <span className={styles.controlLabel}>Filter</span>
+                  <button
+                    className={`${styles.chip} ${activeFilter === "all" ? styles.chipActive : ""}`}
+                    type="button"
+                    onClick={() => setActiveFilter("all")}
+                  >
+                    All
+                  </button>
+                  {(Object.keys(CATEGORY_META) as ResearchCategory[]).map((category) => (
+                    <button
+                      key={category}
+                      className={`${styles.chip} ${
+                        activeFilter === category ? styles.chipActive : ""
+                      }`}
+                      type="button"
+                      onClick={() => setActiveFilter(category)}
+                    >
+                      {CATEGORY_META[category].label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className={styles.controlsInline}>
+                  <span className={styles.controlLabel}>Sort</span>
+                  <button
+                    className={`${styles.chip} ${
+                      sortMode === "relevance" ? styles.chipActive : ""
+                    }`}
+                    type="button"
+                    onClick={() => setSortMode("relevance")}
+                  >
+                    Relevance
+                  </button>
+                  <button
+                    className={`${styles.chip} ${sortMode === "recency" ? styles.chipActive : ""}`}
+                    type="button"
+                    onClick={() => setSortMode("recency")}
+                  >
+                    Recency
+                  </button>
+                </div>
+              </div>
+
+              {error && <div className={styles.error}>{error}</div>}
+
+              {!resultState && !error && !isPending && (
+                <div className={styles.emptyState}>
+                  Choose a search mode, run the workflow, and compare Exa neural retrieval against Google web search side by side.
+                </div>
+              )}
+
+              {isPending && (
+                <div className={styles.loadingState}>
+                  <div className={styles.skeleton} />
+                  <div className={styles.skeleton} />
+                  <div className={styles.skeleton} />
+                </div>
+              )}
+
+              {resultState?.mode === "document" && (
+                <div className={styles.documentMeta}>
+                  <div className={styles.documentMetaItem}>
+                    <span>Document</span>
+                    <strong>{resultState.filename}</strong>
+                  </div>
+                  <div className={styles.documentMetaItem}>
+                    <span>Angles generated</span>
+                    <strong>Precedent, opposing counsel, industry news</strong>
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.sections}>
+                {sections.map((section) => (
+                  <section className={styles.sectionCard} key={section.category}>
+                    <div className={styles.sectionTop}>
+                      <div>
+                        <div className={styles.label}>{section.description}</div>
+                        <h3>{section.heading}</h3>
+                      </div>
+                      <div className={styles.sectionQuery}>{section.searchQuery}</div>
+                    </div>
+
+                    <div className={styles.providerGrid}>
+                      {(["exa", "google"] as SearchProvider[]).map((provider) => (
+                        <div className={styles.providerColumn} key={provider}>
+                          <div className={styles.providerHeader}>
+                            <div>
+                              <div className={styles.providerTitle}>{PROVIDER_META[provider].label}</div>
+                              <div className={styles.providerSubtitle}>
+                                {PROVIDER_META[provider].subtitle}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className={styles.cards}>
+                            {section.results[provider].length === 0 ? (
+                              <div className={styles.emptyCard}>
+                                {provider === "google"
+                                  ? "No Google results returned. Check Google API configuration or broaden the query."
+                                  : "No Exa results returned for this category."}
+                              </div>
+                            ) : (
+                              section.results[provider].map((result) => (
+                                <article className={styles.card} key={result.id}>
+                                  <a href={result.url} target="_blank" rel="noreferrer">
+                                    <h4 className={styles.cardTitle}>{result.title}</h4>
+                                  </a>
+                                  <div className={styles.cardCitation}>
+                                    <span>{extractDomain(result.url)}</span>
+                                    <span className={styles.citationDot}>&middot;</span>
+                                    <span>{formatDate(result.publishedDate)}</span>
+                                  </div>
+                                  <p className={styles.snippet}>{result.snippet}</p>
+                                  <div className={styles.cardMeta}>
+                                    <span>{CATEGORY_META[result.category].label}</span>
+                                  </div>
+                                </article>
+                              ))
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </section>
-                )}
+                ))}
               </div>
-            )}
-          </aside>
-        </section>
-      </div>
-    </main>
+            </section>
+
+            {/* ── Right panel: config ── */}
+            <aside
+              className={`${styles.panel} ${styles.configPanel} ${
+                configExpanded ? "" : styles.configPanelCollapsed
+              }`}
+            >
+              <div className={styles.configHeader}>
+                <div>
+                  <div className={styles.label}>Configuration</div>
+                  {configExpanded && <h2>Search controls</h2>}
+                </div>
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  onClick={() => setConfigExpanded((current) => !current)}
+                >
+                  {configExpanded ? "Collapse" : "Open"}
+                </button>
+              </div>
+
+              {configExpanded && (
+                <div className={styles.configBody}>
+                  <section className={styles.configSection}>
+                    <div className={styles.sectionHeader}>
+                      <h3>Relevant legal sites</h3>
+                    </div>
+                    <div className={styles.optionList}>
+                      {DOMAIN_PRESETS.map((preset) => (
+                        <label className={styles.option} key={preset.id}>
+                          <input
+                            checked={selectedPresetIds.includes(preset.id)}
+                            type="checkbox"
+                            onChange={() => togglePreset(preset.id)}
+                          />
+                          <span>
+                            <strong>{preset.label}</strong>
+                            <em>{preset.domain}</em>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className={styles.configSection}>
+                    <div className={styles.sectionHeader}>
+                      <h3>Additional domains</h3>
+                    </div>
+                    <textarea
+                      className={styles.configTextarea}
+                      placeholder="law360.com, regulations.gov"
+                      value={customDomains}
+                      onChange={(event) => setCustomDomains(event.target.value)}
+                    />
+                  </section>
+
+                  <section className={styles.configSection}>
+                    <label className={styles.switchRow}>
+                      <span>Show Exa request payloads</span>
+                      <input
+                        checked={showExaParams}
+                        type="checkbox"
+                        onChange={(event) => setShowExaParams(event.target.checked)}
+                      />
+                    </label>
+                  </section>
+
+                  {showExaParams && currentExaRequests.length > 0 && (
+                    <section className={styles.configSection}>
+                      <div className={styles.sectionHeader}>
+                        <h3>Exa API parameters</h3>
+                      </div>
+                      <div className={styles.requestList}>
+                        {currentExaRequests.map((request) => (
+                          <div className={styles.requestBlock} key={request.label}>
+                            <div className={styles.requestLabel}>{request.label}</div>
+                            <pre className={styles.requestCode}>{prettyJson(request.payload)}</pre>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              )}
+            </aside>
+          </section>
+        </div>
+      </main>
+    </div>
   );
 }
