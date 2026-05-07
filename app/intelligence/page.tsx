@@ -26,6 +26,7 @@ type TabState = {
   error: string | null;
   executedQuery: string | null;
   executedRequest: Record<string, unknown> | null;
+  executedResponse: Record<string, unknown> | null;
 };
 
 // ─── Tab configuration ───────────────────────────────────────────────────────
@@ -106,12 +107,8 @@ function prettyJson(value: unknown): string {
 
 function buildPreviewPayload(
   tab: TabId,
-  judgeName: string,
-  firmName: string,
-  entityName: string
+  query: string
 ): Record<string, unknown> {
-  const inputs: Record<TabId, string> = { judge: judgeName, counsel: firmName, entity: entityName };
-  const query = TAB_CONFIG[tab].buildQuery(inputs[tab]);
   const { highlights: _h, ...restParams } = TAB_CONFIG[tab].previewParams as Record<string, unknown>;
   return {
     query,
@@ -121,7 +118,14 @@ function buildPreviewPayload(
 }
 
 function makeTabState(): TabState {
-  return { results: null, pending: false, error: null, executedQuery: null, executedRequest: null };
+  return {
+    results: null,
+    pending: false,
+    error: null,
+    executedQuery: null,
+    executedRequest: null,
+    executedResponse: null
+  };
 }
 
 // ─── Page component ──────────────────────────────────────────────────────────
@@ -131,6 +135,12 @@ export default function IntelligencePage() {
   const [judgeName, setJudgeName] = useState("Hon. Lucy Koh");
   const [firmName, setFirmName] = useState("Quinn Emanuel");
   const [entityName, setEntityName] = useState("Apple Inc.");
+  const [tabQueries, setTabQueries] = useState<Record<TabId, string>>({
+    judge: TAB_CONFIG.judge.buildQuery("Hon. Lucy Koh"),
+    counsel: TAB_CONFIG.counsel.buildQuery("Quinn Emanuel"),
+    entity: TAB_CONFIG.entity.buildQuery("Apple Inc.")
+  });
+  const [showRawResponse, setShowRawResponse] = useState(false);
 
   const [westlawMode, setWestlawMode] = useState<Record<TabId, boolean>>({
     judge: false,
@@ -147,17 +157,15 @@ export default function IntelligencePage() {
   const cfg = TAB_CONFIG[activeTab];
   const ts = tabStates[activeTab];
   const isWestlaw = westlawMode[activeTab];
+  const liveQuery = tabQueries[activeTab];
 
   const previewPayload = useMemo(
-    () => buildPreviewPayload(activeTab, judgeName, firmName, entityName),
-    [activeTab, judgeName, firmName, entityName]
+    () => buildPreviewPayload(activeTab, liveQuery),
+    [activeTab, liveQuery]
   );
 
   // After a run, show the actual request returned from the API; otherwise show preview
   const inspectorPayload = ts.executedRequest ?? previewPayload;
-
-  // Separate query from the rest of the params for cleaner display
-  const { query: inspectorQuery, ...inspectorParams } = inspectorPayload;
 
   async function runSearch() {
     setTabStates((prev) => ({
@@ -166,19 +174,36 @@ export default function IntelligencePage() {
     }));
 
     try {
+      const clientRequest = {
+        url: "/api/intelligence",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: { tab: activeTab, judgeName, firmName, entityName, query: liveQuery }
+      };
+      console.groupCollapsed(`[Intelligence] ${activeTab} request`);
+      console.log("Request", clientRequest);
+      console.log("Exa request preview", previewPayload);
+      console.groupEnd();
+
       const res = await fetch("/api/intelligence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tab: activeTab, judgeName, firmName, entityName })
+        body: JSON.stringify(clientRequest.body)
       });
 
       const data = (await res.json()) as {
         results?: IntelligenceResult[];
         query?: string;
         request?: Record<string, unknown>;
+        response?: Record<string, unknown>;
         error?: string;
         attemptedQuery?: string;
       };
+
+      console.groupCollapsed(`[Intelligence] ${activeTab} response`);
+      console.log("Status", res.status);
+      console.log("Response JSON", data);
+      console.groupEnd();
 
       if (!res.ok) {
         throw Object.assign(new Error(data.error || "Search failed."), {
@@ -193,14 +218,23 @@ export default function IntelligencePage() {
           error: null,
           results: data.results ?? [],
           executedQuery: data.query ?? null,
-          executedRequest: data.request ?? null
+          executedRequest: data.request ?? null,
+          executedResponse: data.response ?? data
         }
       }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Search failed.";
+      console.groupCollapsed(`[Intelligence] ${activeTab} error`);
+      console.error(err);
+      console.groupEnd();
       setTabStates((prev) => ({
         ...prev,
-        [activeTab]: { ...prev[activeTab], pending: false, error: msg }
+        [activeTab]: {
+          ...prev[activeTab],
+          pending: false,
+          error: msg,
+          executedResponse: null
+        }
       }));
     }
   }
@@ -213,6 +247,17 @@ export default function IntelligencePage() {
     setActiveTab(tabId);
     // Reset Westlaw mode when switching tabs so Exa results are front and center
     setWestlawMode((prev) => ({ ...prev, [tabId]: false }));
+  }
+
+  function updateQueryForActiveTab(query: string) {
+    setTabQueries((prev) => ({ ...prev, [activeTab]: query }));
+  }
+
+  function syncQuery(tabId: TabId, value: string) {
+    setTabQueries((prev) => ({
+      ...prev,
+      [tabId]: TAB_CONFIG[tabId].buildQuery(value)
+    }));
   }
 
   return (
@@ -248,7 +293,10 @@ export default function IntelligencePage() {
               <input
                 className={styles.matterInput}
                 value={judgeName}
-                onChange={(e) => setJudgeName(e.target.value)}
+                onChange={(e) => {
+                  setJudgeName(e.target.value);
+                  syncQuery("judge", e.target.value);
+                }}
                 placeholder="Judge name"
               />
             </label>
@@ -257,7 +305,10 @@ export default function IntelligencePage() {
               <input
                 className={styles.matterInput}
                 value={firmName}
-                onChange={(e) => setFirmName(e.target.value)}
+                onChange={(e) => {
+                  setFirmName(e.target.value);
+                  syncQuery("counsel", e.target.value);
+                }}
                 placeholder="Firm name"
               />
             </label>
@@ -266,7 +317,10 @@ export default function IntelligencePage() {
               <input
                 className={styles.matterInput}
                 value={entityName}
-                onChange={(e) => setEntityName(e.target.value)}
+                onChange={(e) => {
+                  setEntityName(e.target.value);
+                  syncQuery("entity", e.target.value);
+                }}
                 placeholder="Entity name"
               />
             </label>
@@ -308,17 +362,22 @@ export default function IntelligencePage() {
           </div>
 
           <div className={styles.inspectorSection}>
-            <div className={styles.sectionLabel}>
-              {ts.executedRequest ? "Executed query" : "Query preview"}
-            </div>
-            <div className={styles.queryBlock}>{String(inspectorQuery ?? "")}</div>
+            <div className={styles.sectionLabel}>Query editor</div>
+            <textarea
+              className={styles.queryEditor}
+              value={liveQuery}
+              onChange={(e) => updateQueryForActiveTab(e.target.value)}
+            />
           </div>
 
           <div className={styles.inspectorSection}>
-            <div className={styles.sectionLabel}>
-              {ts.executedRequest ? "Executed parameters" : "Parameters"}
-            </div>
-            <pre className={styles.jsonBlock}>{prettyJson(inspectorParams)}</pre>
+            <div className={styles.sectionLabel}>Live API call preview</div>
+            <div className={styles.queryBlock}>{String(previewPayload.query ?? "")}</div>
+          </div>
+
+          <div className={styles.inspectorSection}>
+            <div className={styles.sectionLabel}>Parameters to be sent</div>
+            <pre className={styles.jsonBlock}>{prettyJson(previewPayload)}</pre>
           </div>
 
           <div className={styles.inspectorSection}>
@@ -415,45 +474,62 @@ export default function IntelligencePage() {
 
             {/* ── Results ── */}
             {!isWestlaw && !ts.pending && ts.results !== null && (
-              <div className={styles.resultsList}>
-                {ts.results.length === 0 ? (
-                  <div className={styles.emptyPane}>
-                    <p className={styles.emptyText}>
-                      No results returned for this query. Try adjusting the matter context
-                      and re-running.
-                    </p>
-                  </div>
-                ) : (
-                  ts.results.map((result) => (
-                    <article key={result.id} className={styles.resultCard}>
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.resultTitleLink}
-                      >
-                        <h3 className={styles.resultTitle}>{result.title}</h3>
-                      </a>
-                      <div className={styles.resultCitation}>
-                        <span>{result.domain}</span>
-                        <span className={styles.citationDot}>&middot;</span>
-                        <span>{formatDate(result.publishedDate)}</span>
-                      </div>
-                      {result.highlights.length > 0 ? (
-                        <div className={styles.highlights}>
-                          {result.highlights.slice(0, 2).map((hl, i) => (
-                            <div key={i} className={styles.highlight}>
-                              <span className={styles.highlightLabel}>Highlight</span>
-                              {hl}
-                            </div>
-                          ))}
+              <div className={styles.resultsStack}>
+                <div className={styles.resultsList}>
+                  {ts.results.length === 0 ? (
+                    <div className={styles.emptyPane}>
+                      <p className={styles.emptyText}>
+                        No results returned for this query. Try adjusting the matter context
+                        and re-running.
+                      </p>
+                    </div>
+                  ) : (
+                    ts.results.map((result) => (
+                      <article key={result.id} className={styles.resultCard}>
+                        <a
+                          href={result.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={styles.resultTitleLink}
+                        >
+                          <h3 className={styles.resultTitle}>{result.title}</h3>
+                        </a>
+                        <div className={styles.resultCitation}>
+                          <span>{result.domain}</span>
+                          <span className={styles.citationDot}>&middot;</span>
+                          <span>{formatDate(result.publishedDate)}</span>
                         </div>
-                      ) : result.snippet ? (
-                        <p className={styles.snippet}>{result.snippet}</p>
-                      ) : null}
-                    </article>
-                  ))
-                )}
+                        {result.highlights.length > 0 ? (
+                          <div className={styles.highlights}>
+                            {result.highlights.slice(0, 2).map((hl, i) => (
+                              <div key={i} className={styles.highlight}>
+                                <span className={styles.highlightLabel}>Highlight</span>
+                                {hl}
+                              </div>
+                            ))}
+                          </div>
+                        ) : result.snippet ? (
+                          <p className={styles.snippet}>{result.snippet}</p>
+                        ) : null}
+                      </article>
+                    ))
+                  )}
+                </div>
+
+                <div className={styles.rawResponseSection}>
+                  <button
+                    className={styles.rawResponseToggle}
+                    onClick={() => setShowRawResponse((current) => !current)}
+                    type="button"
+                  >
+                    {showRawResponse ? "Hide raw API response" : "Show raw API response"}
+                  </button>
+                  {showRawResponse && (
+                    <pre className={styles.rawResponseBlock}>
+                      {prettyJson(ts.executedResponse ?? {})}
+                    </pre>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -24,6 +24,7 @@ export type IntelligenceResponse = {
   tab: TabId;
   query: string;
   request: Record<string, unknown>;
+  response: Record<string, unknown>;
   results: IntelligenceResult[];
 };
 
@@ -105,6 +106,7 @@ export async function POST(req: Request) {
       judgeName?: string;
       firmName?: string;
       entityName?: string;
+      query?: string;
     };
 
     const tab = body.tab as TabId | undefined;
@@ -116,7 +118,8 @@ export async function POST(req: Request) {
     const firmName = body.firmName?.trim() || "Quinn Emanuel";
     const entityName = body.entityName?.trim() || "Apple Inc.";
 
-    const query = buildQuery(tab, judgeName, firmName, entityName);
+    const query =
+      body.query?.trim() || buildQuery(tab, judgeName, firmName, entityName);
     attemptedQuery = query;
 
     const requestPayload = buildExaRequest(tab, query);
@@ -139,7 +142,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const data = (await exaResponse.json()) as { results?: Record<string, unknown>[] };
+    const data = (await exaResponse.json()) as Record<string, unknown> & {
+      results?: Record<string, unknown>[];
+    };
     const rawResults = data.results ?? [];
 
     const results: IntelligenceResult[] = rawResults
@@ -177,6 +182,7 @@ export async function POST(req: Request) {
       tab,
       query,
       request: requestPayload,
+      response: data,
       results
     };
 

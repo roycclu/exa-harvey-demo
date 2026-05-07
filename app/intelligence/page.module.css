@@ -311,6 +311,25 @@
   word-break: break-word;
 }
 
+.queryEditor {
+  width: 100%;
+  min-height: 124px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 11px 13px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.76rem;
+  line-height: 1.65;
+}
+
+.queryEditor:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .jsonBlock {
   margin: 0;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -438,6 +457,11 @@
 .resultsPanelBody {
   flex: 1;
   overflow-y: auto;
+}
+
+.resultsStack {
+  display: grid;
+  gap: 14px;
 }
 
 /* ─── WESTLAW COVERAGE PANE ─── */
@@ -625,6 +649,47 @@
 .resultsList {
   display: grid;
   gap: 0;
+}
+
+.rawResponseSection {
+  display: grid;
+  gap: 10px;
+  padding: 0 20px 20px;
+}
+
+.rawResponseToggle {
+  width: fit-content;
+  min-height: 30px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.rawResponseToggle:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--text);
+}
+
+.rawResponseBlock {
+  margin: 0;
+  padding: 14px;
+  overflow-x: auto;
+  border-radius: 3px;
+  background: #0b0b0b;
+  border: 1px solid var(--border);
+  color: #96B4CA;
+  font-size: 0.72rem;
+  line-height: 1.65;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  white-space: pre;
 }
 
 /* ─── RESULT CARD ─── */
